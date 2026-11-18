@@ -1,0 +1,144 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/bricolage-grotesque';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens from the "Jellyfin redesign" canvas, mapped onto shadcn-svelte's variables. */
+:root {
+	--radius: 0.875rem;
+	--background: #f6f6f9;
+	--foreground: #15141a;
+	--card: #ffffff;
+	--card-foreground: #15141a;
+	--popover: #ffffff;
+	--popover-foreground: #15141a;
+	--primary: #0075a0;
+	--primary-foreground: #ffffff;
+	--secondary: #ececf2;
+	--secondary-foreground: #15141a;
+	--muted: #ececf2;
+	--muted-foreground: #5c5a66;
+	--accent: #ececf2;
+	--accent-foreground: #15141a;
+	--destructive: #c0262d;
+	--border: #dedde6;
+	--input: #dedde6;
+	--ring: #0075a0;
+	--brand-purple: #8a3fa3;
+	--brand-grad: linear-gradient(120deg, #aa5cc3, #00a4dc);
+	/* Chart series: each is ≥3:1 against the card background in its theme, and they differ in lightness as well as hue. */
+	--chart-1: #0075a0;
+	--chart-2: #8a3fa3;
+	--chart-3: #a8620f;
+	--chart-4: #17795d;
+	--chart-5: #c0346a;
+	--ink: #0b0b10;
+	--player: #c58ad9;
+	--player-foreground: #17061f;
+}
+
+.dark {
+	--background: #101014;
+	--foreground: #f1f0f4;
+	--card: #1a1a21;
+	--card-foreground: #f1f0f4;
+	--popover: #1a1a21;
+	--popover-foreground: #f1f0f4;
+	--primary: #33b7e6;
+	--primary-foreground: #0b0b10;
+	--secondary: #24242d;
+	--secondary-foreground: #f1f0f4;
+	--muted: #24242d;
+	--muted-foreground: #a6a4b0;
+	--accent: #24242d;
+	--accent-foreground: #f1f0f4;
+	--destructive: #ff6b6b;
+	--border: #2c2c36;
+	--input: #2c2c36;
+	--ring: #33b7e6;
+	--brand-purple: #c58ad9;
+	--chart-1: #33b7e6;
+	--chart-2: #c58ad9;
+	--chart-3: #e8a23a;
+	--chart-4: #4cc9a0;
+	--chart-5: #ff7fa8;
+}
+
+@theme inline {
+	--font-sans: 'Inter Variable', system-ui, sans-serif;
+	--font-display: 'Bricolage Grotesque Variable', 'Inter Variable', sans-serif;
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-brand-purple: var(--brand-purple);
+	--color-ink: var(--ink);
+	--color-player: var(--player);
+	--color-player-foreground: var(--player-foreground);
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground font-sans antialiased;
+		font-size: 15px;
+	}
+	h1, h2, h3 {
+		@apply font-display tracking-tight;
+	}
+	:focus-visible {
+		outline: 3px solid var(--ring);
+		outline-offset: 3px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		*, *::before, *::after {
+			animation-duration: 0.01ms !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+}
+
+@keyframes eq {
+	0%, 100% { transform: scaleY(0.25); }
+	50% { transform: scaleY(1); }
+}
+@keyframes drift1 {
+	0% { transform: translate(0, 0) scale(1); }
+	50% { transform: translate(8%, 10%) scale(1.15); }
+	100% { transform: translate(-4%, 16%) scale(0.95); }
+}
+@keyframes drift2 {
+	0% { transform: translate(0, 0) scale(1); }
+	50% { transform: translate(-10%, -8%) scale(1.2); }
+	100% { transform: translate(6%, -14%) scale(1); }
+}
+
+/* Long titles glide to the end and back, pausing at both ends. */
+@keyframes marquee {
+	0%, 14% { transform: translateX(0); }
+	86%, 100% { transform: translateX(var(--shift)); }
+}
+.marquee { animation: marquee var(--dur, 6s) ease-in-out infinite alternate; will-change: transform; }
+@media (prefers-reduced-motion: reduce) {
+	/* No motion: let the title wrap so all of it stays readable. */
+	.marquee-box { white-space: normal; overflow-wrap: anywhere; }
+	.marquee { animation: none; display: inline; }
+}

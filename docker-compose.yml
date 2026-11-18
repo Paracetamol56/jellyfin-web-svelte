@@ -1,0 +1,20 @@
+# One-command local stack: Jellyfin with this client built in.
+#   docker compose up --build   →   http://localhost:8096
+# Point MEDIA_DIR at a folder of media (read-only). Config persists in named volumes.
+services:
+  jellyfin:
+    build:
+      context: .
+      target: server
+    image: jellyfin-svelte:local
+    ports:
+      - '8096:8096'
+    volumes:
+      - config:/config
+      - cache:/cache
+      - ${MEDIA_DIR:-./media}:/media:ro
+    restart: unless-stopped
+
+volumes:
+  config:
+  cache:

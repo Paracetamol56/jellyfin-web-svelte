@@ -1,0 +1,130 @@
+/* Maps the stock web client's classes (used by plugin pages) onto this app's theme. */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+body {
+	margin: 0;
+	background: var(--card);
+	color: var(--foreground);
+	font: 15px/1.5 'Inter Variable', Inter, system-ui, sans-serif;
+	overflow: hidden;
+}
+.jf-host { padding: 4px 2px 24px; }
+a { color: var(--primary); }
+h1, h2, h3, .sectionTitle { font-family: 'Bricolage Grotesque Variable', 'Inter Variable', sans-serif; letter-spacing: -0.015em; }
+h1 { font-size: 1.6em; } h2, .sectionTitle { font-size: 1.3em; margin: 0.6em 0 0.5em; } h3 { font-size: 1.1em; }
+.hide, [hidden] { display: none !important; }
+.content-primary, .readOnlyContent { max-width: 64rem; }
+.verticalSection { margin-bottom: 1.6em; }
+.verticalSection-extrabottompadding { padding-bottom: 1em; }
+.sectionTitleContainer { display: flex; align-items: center; gap: 0.75em; flex-wrap: wrap; }
+.sectionTitleContainer .sectionTitle { margin: 0.6em 0; }
+
+/* Fields */
+.inputContainer, .selectContainer, .checkboxContainer { margin-bottom: 1.3em; }
+.inputLabel, .selectLabel, .textareaLabel, .inputLabelUnfocused { display: block; font-weight: 600; font-size: 0.9em; margin-bottom: 0.4em; color: var(--foreground); }
+.fieldDescription, .checkboxFieldDescription { color: var(--muted-foreground); font-size: 0.85em; margin-top: 0.4em; }
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea, .emby-input, .emby-select, .emby-textarea {
+	width: 100%;
+	min-height: 44px;
+	padding: 0.55em 0.9em;
+	border: 1px solid var(--input);
+	border-radius: 12px;
+	background: var(--background);
+	color: var(--foreground);
+	font: inherit;
+	outline: none;
+}
+textarea, .emby-textarea { min-height: 7em; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--ring); outline: 3px solid color-mix(in srgb, var(--ring) 35%, transparent); outline-offset: 1px; }
+.selectArrowContainer { display: none; }
+input[type=checkbox], input[type=radio], input[type=range] { accent-color: var(--primary); }
+input[type=checkbox], input[type=radio] { width: 1.15em; height: 1.15em; margin: 0; flex: none; }
+.checkboxContainer > label, label.emby-checkbox-label, .checkboxLabel, label:has(> input[type=checkbox]), label:has(> input[type=radio]) {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+	cursor: pointer;
+	margin-bottom: 0.6em;
+}
+label:has(> input[type=checkbox]) > span, .emby-checkbox-label > span:not(.checkboxIcon) { flex: 1; }
+.checkboxContainer-withDescription .checkboxFieldDescription { margin-left: 1.85em; }
+/* The stock checkbox draws its own box; the native one is used instead. */
+.checkboxOutline, .checkboxIcon, .checkboxIcon-checked, .checkboxIcon-unchecked { display: none !important; }
+
+/* Buttons */
+button, .emby-button, .button-link, a[is=emby-linkbutton].raised, .raised {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	min-height: 40px;
+	padding: 0 1.1em;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--foreground);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	text-decoration: none;
+}
+button:hover, .emby-button:hover { background: var(--accent); }
+.raised { background: var(--secondary); border-color: transparent; }
+.button-submit, button[type=submit].raised, .raised.button-submit { background: var(--primary); color: var(--primary-foreground); border-color: transparent; }
+.button-submit:hover { filter: brightness(1.08); background: var(--primary); }
+.button-delete, .button-cancel { color: var(--destructive); }
+.block { display: flex; width: 100%; margin-top: 0.5em; }
+button:disabled { opacity: 0.5; cursor: default; }
+.paper-icon-button-light, .fab { min-height: 36px; padding: 0 0.6em; }
+
+/* Lists and tables */
+.paperList { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--background); }
+.listItem { display: flex; align-items: center; gap: 0.8em; padding: 0.7em 1em; border-bottom: 1px solid var(--border); }
+.listItem:last-child { border-bottom: 0; }
+.listItemBody { flex: 1; min-width: 0; }
+.secondary, .listItemBodyText.secondary { color: var(--muted-foreground); font-size: 0.9em; }
+table { border-collapse: collapse; width: 100%; }
+th, td, .detailTableHeaderCell { padding: 0.5em 0.75em; border-bottom: 1px solid var(--border); text-align: left; }
+th, .detailTableHeaderCell { color: var(--muted-foreground); font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.06em; }
+fieldset { border: 1px solid var(--border); border-radius: 14px; padding: 0.8em 1em 0.4em; margin: 0 0 1.3em; }
+legend { padding: 0 0.4em; font-weight: 600; }
+details > summary { cursor: pointer; font-weight: 600; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em; }
+pre { background: var(--background); border: 1px solid var(--border); border-radius: 12px; padding: 0.8em; overflow: auto; }
+
+/* Material Icons (bundled with this app, as the stock client does) */
+.material-icons, .md-icon {
+	font-family: 'Material Icons';
+	font-weight: normal;
+	font-style: normal;
+	font-size: 24px;
+	line-height: 1;
+	letter-spacing: normal;
+	text-transform: none;
+	display: inline-block;
+	white-space: nowrap;
+	direction: ltr;
+	-webkit-font-smoothing: antialiased;
+	font-feature-settings: 'liga';
+}
+
+/* Plugin tab bars (LibraryMenu.setTabs) */
+#jf-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 1.2em; border-bottom: 1px solid var(--border); }
+#jf-tabs a { padding: 0.7em 0.9em; color: var(--muted-foreground); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+#jf-tabs a[aria-current=page] { color: var(--foreground); font-weight: 600; border-color: var(--primary); }
+
+/* Dashboard.showLoadingMsg */
+html.jf-loading body::after {
+	content: '';
+	position: fixed;
+	top: 12px;
+	right: 12px;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 3px solid var(--border);
+	border-top-color: var(--primary);
+	animation: jf-spin 0.8s linear infinite;
+}
+@keyframes jf-spin { to { transform: rotate(360deg); } }

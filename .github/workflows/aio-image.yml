@@ -1,0 +1,75 @@
+# Builds the all-in-one Jellyfin image (server + ffmpeg + this client) natively on arm64.
+# The image is always saved as a workflow artifact (docker load -i); GHCR push is opt-in.
+name: aio-image
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_ref:
+        description: jellyfin/jellyfin tag, branch or commit (pin it; the client must match the server)
+        default: master
+      push:
+        description: Also push to ghcr.io
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: web
+
+      - uses: actions/checkout@v4
+        with:
+          repository: jellyfin/jellyfin
+          ref: ${{ inputs.server_ref }}
+          path: server
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/jellyfin-svelte" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: inputs.push
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: web/Dockerfile.aio
+          platforms: linux/arm64
+          build-args: |
+            JELLYFIN_VERSION=${{ inputs.server_ref }}-svelte-${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+          outputs: type=docker,dest=${{ runner.temp }}/jellyfin-svelte.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push to GHCR
+        if: inputs.push
+        run: |
+          docker load -i "$RUNNER_TEMP/jellyfin-svelte.tar"
+          docker push --all-tags "$IMAGE"
+
+      - name: Compress image
+        run: gzip -1 "$RUNNER_TEMP/jellyfin-svelte.tar"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jellyfin-svelte-arm64
+          path: ${{ runner.temp }}/jellyfin-svelte.tar.gz
+          compression-level: 0
+          retention-days: 7
