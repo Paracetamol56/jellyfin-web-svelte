@@ -25,7 +25,6 @@
 	const resumable = $derived(progress(item) > 0);
 
 	const title = $derived(item.Type === 'Episode' ? (item.SeriesName ?? item.Name ?? '') : (item.Name ?? ''));
-	const ghost = $derived(title.split(/\s+/).slice(0, 2));
 	const meta = $derived(
 		item.Type === 'Episode' ? episodeCode(item) : [item.Type === 'Movie' ? 'Film' : item.Type, item.ProductionYear].filter(Boolean).join(' · ')
 	);
@@ -50,13 +49,6 @@
 		{#key bg}<img src={bg} alt="" class="absolute inset-0 size-full object-cover" />{/key}
 	{/if}
 	<div aria-hidden="true" class="absolute inset-0 bg-[linear-gradient(90deg,#0B0B10F5_0%,#0B0B10C0_45%,#0B0B1033_100%),linear-gradient(0deg,#0B0B10E0_0%,transparent_55%)]"></div>
-	<div
-		aria-hidden="true"
-		class="font-display pointer-events-none absolute top-6 -right-3 text-right text-[clamp(72px,8vw,120px)] leading-[0.82] font-extrabold tracking-[-0.03em] whitespace-nowrap opacity-[0.14] max-md:hidden"
-		style="color: {accent.value}"
-	>
-		{ghost[0]}<br />{ghost[1] ?? ''}
-	</div>
 
 	<div role="group" aria-roledescription="slide" aria-label="{index + 1} of {n}" aria-live="polite" class="relative flex max-w-[640px] flex-col gap-3.5 px-6 pt-10 pb-7 md:px-11">
 		<div class="flex flex-wrap items-center gap-2 text-xs font-bold tracking-[0.08em] uppercase">

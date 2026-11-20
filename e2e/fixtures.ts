@@ -70,7 +70,7 @@ export const movies = [
 		],
 		Chapters: [0, 340, 776, 1148].map((s, i) => ({ Name: `Chapter ${i + 1}`, StartPositionTicks: s * T })),
 		UserData: { Played: false, PlaybackPositionTicks: 41 * 60 * T, PlayedPercentage: 65, IsFavorite: false },
-		MediaSources: [stream('mp4')]
+		MediaSources: [stream('mp4', [{ Index: 4, Type: 'Subtitle', Codec: 'subrip', Language: 'jpn', DisplayTitle: 'Japanese (SRT)' }])]
 	}),
 	movie('m2', 'Wolf Children', 2012, 117),
 	movie('m3', 'A Scene at the Sea', 1991, 101, { ImageTags: {} }),

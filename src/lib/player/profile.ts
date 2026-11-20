@@ -97,7 +97,7 @@ export function deviceProfile(): DeviceProfile {
 		TranscodingProfiles: transcoding,
 		ContainerProfiles: [],
 		CodecProfiles: [],
-		SubtitleProfiles: getBrowserDeviceProfile(undefined, v).SubtitleProfiles
+		SubtitleProfiles: getBrowserDeviceProfile({ ssaExternal: true }, v).SubtitleProfiles
 	};
 	return cached;
 }

@@ -7,11 +7,11 @@ ARG JELLYFIN_IMAGE=jellyfin/jellyfin:latest
 
 FROM node:${NODE_VERSION}-alpine AS build
 WORKDIR /app
-RUN corepack enable
-COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile
+RUN npm install -g bun@1.4.4
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 COPY . .
-RUN pnpm build
+RUN bun run build
 
 FROM scratch AS export
 COPY --from=build /app/build /

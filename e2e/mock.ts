@@ -114,8 +114,29 @@ export async function mockJellyfin(page: Page, opts: { admin?: boolean } = {}): 
 			const item = F.all[m[1]] as { MediaType?: string };
 			return json(route, {
 				PlaySessionId: `ps-${m[1]}`,
-				MediaSources: [{ ...(item as { MediaSources?: object[] }).MediaSources?.[0], Id: 'ms1', Container: 'wav', SupportsDirectPlay: true, ETag: 'e' }]
+				MediaSources: [
+					{
+						...(item as { MediaSources?: { MediaStreams?: { Type: string; Index: number }[] }[] }).MediaSources?.[0],
+						Id: 'ms1',
+						Container: 'wav',
+						SupportsDirectPlay: true,
+						ETag: 'e',
+						// Like the real server: text subtitles are offered as external WebVTT, with a URL relative to the server.
+						MediaStreams: (item as { MediaSources?: { MediaStreams?: { Type: string; Index: number }[] }[] }).MediaSources?.[0]?.MediaStreams?.map((st) =>
+							st.Type === 'Subtitle'
+								? { ...st, DeliveryMethod: 'External', DeliveryUrl: `/Videos/${m![1]}/ms1/Subtitles/${st.Index}/0/Stream.vtt`, IsTextSubtitleStream: true, SupportsExternalStream: true }
+								: st
+						)
+					}
+				]
 			});
+		}
+		if ((m = p.match(/^\/Videos\/([^/]+)\/([^/]+)\/Subtitles\/(\d+)\/\d+\/Stream\.(vtt|js)$/))) {
+			// As on a real server: the browser's own <track> loader is refused cross-origin, so the client asks for the JSON form.
+			log.requests.push(`subtitle ${m[3]}.${m[4]}`);
+			const events = [0, 1, 2, 3].map((i) => ({ StartPositionTicks: i * 10 * 10_000_000, EndPositionTicks: (i * 10 + 1) * 10_000_000, Text: i === 1 ? '<i>Subtitle line 2 (italic in the file)</i>' : `Subtitle line ${i + 1}${m![3] === '4' ? ' (jpn)' : ''}` }));
+			if (m[4] === 'js') return json(route, { TrackEvents: events });
+			return route.fulfill({ status: 403, body: 'blocked like a cross-origin <track>' });
 		}
 		if ((m = p.match(/^\/Items\/([^/]+)\/Similar$/))) return json(route, page_(F.movies.slice(1, 4)));
 		if ((m = p.match(/^\/Items\/([^/]+)$/))) {

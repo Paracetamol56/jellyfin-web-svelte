@@ -7,8 +7,8 @@ Screens follow the "Jellyfin redesign" design canvas: Home, Movie / Show / Album
 ## Develop
 
 ```sh
-pnpm install
-pnpm dev            # http://localhost:5173, then sign in with your server's address
+bun install
+bun dev            # http://localhost:5173, then sign in with your server's address
 ```
 
 If your server restricts cross-origin requests (Dashboard → Networking → "CORS hosts"), let the dev server proxy it instead: put `VITE_JELLYFIN_URL=https://your-server` in `.env.local` (see `.env.example`) and restart. The login page then defaults to the proxy.
@@ -17,11 +17,11 @@ If your server restricts cross-origin requests (Dashboard → Networking → "CO
 
 | Command | What it runs |
 | --- | --- |
-| `pnpm lint` | `svelte-check` type-check, warnings fail |
-| `pnpm test` | Vitest unit tests (formatting, device profile) |
-| `pnpm test:e2e` | Playwright against the production build with a **mocked Jellyfin API** (no server needed): sign-in, browsing, library tabs/sort/A–Z, search, album + video playback, progress reporting, accessibility (axe, light + dark) |
-| `pnpm test:visual` | Screenshot comparison of the 7 design screens (baselines in `e2e/__screenshots__`; refresh with `--update-snapshots`) |
-| `pnpm test:live` | Read-only smoke test against a real server, configured in `.env.test.local` (`JELLYFIN_URL`, `JELLYFIN_TEST_USER`, `JELLYFIN_TEST_PASSWORD`) |
+| `bun run lint` | `svelte-check` type-check, warnings fail |
+| `bun run test` | Vitest unit tests (formatting, device profile) |
+| `bun run test:e2e` | Playwright against the production build with a **mocked Jellyfin API** (no server needed): sign-in, browsing, library tabs/sort/A–Z, search, album + video playback, progress reporting, accessibility (axe, light + dark) |
+| `bun run test:visual` | Screenshot comparison of the 7 design screens (baselines in `e2e/__screenshots__`; refresh with `--update-snapshots`) |
+| `bun run test:live` | Read-only smoke test against a real server, configured in `.env.test.local` (`JELLYFIN_URL`, `JELLYFIN_TEST_USER`, `JELLYFIN_TEST_PASSWORD`) |
 
 Set `PW_CHROME=/usr/bin/chromium` to use a system Chromium instead of `playwright install`.
 
@@ -32,7 +32,7 @@ The build is a folder of static files with hash routing, so it works under any p
 **Any existing Jellyfin server** — build, then point the server at the folder:
 
 ```sh
-pnpm build                                   # → build/
+bun run build                                 # → build/
 jellyfin --webdir /path/to/client/build      # or JELLYFIN_WEB_DIR=/path/to/client/build
 # from this repo: dotnet run --project Jellyfin.Server -- --webdir client/build
 ```

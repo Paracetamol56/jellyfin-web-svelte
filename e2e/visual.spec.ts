@@ -26,6 +26,7 @@ for (const s of screens) {
 		await mockJellyfin(page);
 		await signIn(page);
 		await s.go(page);
+		await page.getByRole('progressbar', { name: 'Loading Jellyfin' }).waitFor({ state: 'detached' }); // the splash
 		await page.waitForTimeout(800);
 		await expect(page).toHaveScreenshot(`${s.name}.png`, { mask: [page.locator('.tabular-nums')] });
 	});

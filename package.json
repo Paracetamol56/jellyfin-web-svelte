@@ -56,7 +56,7 @@
 		"tailwind-merge": "^3.7.0",
 		"tailwind-variants": "^4.0.2"
 	},
-	"packageManager": "pnpm@12.17.0",
+	"packageManager": "bun@1.4.4",
 	"engines": {
 		"node": ">=22"
 	}

@@ -6,6 +6,7 @@ import { api, jellyfin, session } from '#lib/api/session.svelte.ts';
 import { primaryImage } from '#lib/api/images.ts';
 import { secondsToTicks, ticksToSeconds } from '#lib/api/format.ts';
 import { deviceProfile } from './profile.ts';
+import { toasts } from '#lib/toast.svelte.ts';
 
 export type Repeat = 'off' | 'all' | 'one';
 export interface PlayOptions {
@@ -396,7 +397,7 @@ class Player {
 				: base + source.TranscodingUrl;
 
 			this.attachSource(el, url);
-			if (this.kind === 'video') this.attachSubtitles(el as HTMLVideoElement, source);
+			if (this.kind === 'video') void this.attachSubtitles(el as HTMLVideoElement, source, token);
 			el.volume = this.volume;
 			el.muted = this.muted;
 
@@ -432,18 +433,63 @@ class Player {
 		}
 	}
 
-	private attachSubtitles(el: HTMLVideoElement, source: MediaSourceInfo): void {
+	/** One script-made text track per video element; tracks can't be removed, so it is reused. */
+	private subTracks = new WeakMap<HTMLVideoElement, TextTrack>();
+
+	/**
+	 * Show the selected external subtitle. Like the stock web client, the events are downloaded as
+	 * JSON and added as cues: a <track src> request is refused by the browser when the page and the
+	 * server are on different origins (dev server, proxy), and it can't show ASS/SSA at all.
+	 */
+	private async attachSubtitles(el: HTMLVideoElement, source: MediaSourceInfo, token: number): Promise<void> {
 		el.querySelectorAll('track').forEach((t) => t.remove());
+		let track = this.subTracks.get(el);
+		if (track) {
+			// A disabled track reports no cues, so empty it while it is merely hidden.
+			track.mode = 'hidden';
+			while (track.cues?.length) track.removeCue(track.cues[0]);
+			track.mode = 'disabled';
+		}
 		const sub = source.MediaStreams?.find((s) => s.Type === 'Subtitle' && s.Index === this.subtitleIndex);
 		if (!sub || sub.DeliveryMethod !== 'External' || !sub.DeliveryUrl) return; // burned in, or off
-		const track = document.createElement('track');
-		track.kind = 'subtitles';
-		track.label = sub.DisplayTitle ?? sub.Language ?? 'Subtitles';
-		track.srclang = sub.Language ?? 'und';
-		track.src = sub.IsExternalUrl ? sub.DeliveryUrl : session.serverUrl + sub.DeliveryUrl;
-		track.default = true;
-		el.appendChild(track);
-		track.track.mode = 'showing';
+
+		if (sub.IsExternalUrl) {
+			// A subtitle file hosted elsewhere: let the browser load it.
+			const t = document.createElement('track');
+			t.kind = 'subtitles';
+			t.label = sub.DisplayTitle ?? sub.Language ?? 'Subtitles';
+			t.srclang = sub.Language ?? 'und';
+			t.src = sub.DeliveryUrl;
+			t.default = true;
+			el.appendChild(t);
+			t.track.mode = 'showing';
+			return;
+		}
+
+		let url = session.serverUrl + sub.DeliveryUrl.replace(/Stream\.\w+/, 'Stream.js');
+		if (!/[?&](api_?key)=/i.test(url)) url += (url.includes('?') ? '&' : '?') + 'api_key=' + encodeURIComponent(session.accessToken ?? '');
+		try {
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const data = (await res.json()) as { TrackEvents?: { StartPositionTicks: number; EndPositionTicks: number; Text?: string }[] };
+			if (token !== this.loadToken || this.videoEl !== el) return; // the selection changed meanwhile
+			track ??= el.addTextTrack('subtitles', sub.DisplayTitle ?? 'Subtitles', sub.Language ?? 'und');
+			this.subTracks.set(el, track);
+			// Cues first, then show (Safari wants it in this order).
+			for (const e of data.TrackEvents ?? []) {
+				const text = (e.Text ?? '').replace(/\r/g, '').replace(/\\N/gi, '\n').replace(/\{[^}]*\}/g, '').trim();
+				if (!text) continue;
+				const cue = new VTTCue(e.StartPositionTicks / 1e7, e.EndPositionTicks / 1e7, text);
+				// Several lines up from the bottom edge (more for longer cues), clear of the controls, as the stock client does.
+				cue.snapToLines = true;
+				cue.line = -4 - (text.match(/\n/g) ?? []).length;
+				track.addCue(cue);
+			}
+			track.mode = 'showing';
+		} catch (e) {
+			console.warn('Could not load subtitles', e);
+			toasts.error("Couldn't load the subtitles.");
+		}
 	}
 
 	// ── element events ────────────────────────────────────────────

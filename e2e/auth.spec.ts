@@ -63,3 +63,30 @@ test('approves another device from settings', async ({ page }) => {
 	await expect(code).toHaveValue('');
 	expect(log.writes.map((w) => w.path)).toContain('/QuickConnect/Authorize?code=123456');
 });
+
+test('shows the loading screen while the saved session is checked', async ({ page }) => {
+	await signIn(page);
+	let release!: () => void;
+	const gate = new Promise<void>((r) => (release = r));
+	await page.route('**/Users/Me', async (route) => {
+		await gate;
+		await route.fallback();
+	});
+	await page.reload();
+	const loading = page.getByRole('progressbar', { name: 'Loading Jellyfin' });
+	await expect(loading).toBeVisible();
+	const early = Number(await loading.getAttribute('aria-valuenow'));
+	expect(early).toBeLessThan(35); // still checking the saved sign-in
+	if (process.env.LOADING_SHOT) {
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await page.waitForTimeout(1500);
+		await page.screenshot({ path: `${process.env.LOADING_SHOT}-dark.png` });
+		await page.evaluate(() => document.documentElement.classList.replace('dark', 'light'));
+		await page.screenshot({ path: `${process.env.LOADING_SHOT}-light.png` });
+	}
+	release();
+	await expect(page.getByRole('heading', { name: /Recently added in Movies/ })).toBeVisible();
+	// The bar fills as the first screen's data arrives, then the splash lifts.
+	await expect.poll(async () => Number(await loading.getAttribute('aria-valuenow').catch(() => 100)), { timeout: 8000 }).toBeGreaterThan(early);
+	await expect(loading).toHaveCount(0, { timeout: 8000 });
+});

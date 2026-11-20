@@ -1,6 +1,7 @@
 <script lang="ts">
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Captions from '@lucide/svelte/icons/captions';
+	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Maximize from '@lucide/svelte/icons/maximize';
@@ -21,12 +22,15 @@
 	import { fetchItem } from '#lib/api/queries.ts';
 	import { player } from '#lib/player/player.svelte.ts';
 	import SeekBar from '#lib/components/player/SeekBar.svelte';
+	import SubtitleSettings from '#lib/components/player/SubtitleSettings.svelte';
+	import { subtitleStyle } from '#lib/player/subtitle-style.svelte.ts';
 	import VolumeBar from '#lib/components/player/VolumeBar.svelte';
 
 	const id = $derived(page.params.id!);
 	let video = $state<HTMLVideoElement | null>(null);
 	let shell = $state<HTMLDivElement | null>(null);
 	let idle = $state(false);
+	let subSettingsOpen = $state(false);
 	let fullscreen = $state(false);
 	let idleTimer: ReturnType<typeof setTimeout>;
 
@@ -85,7 +89,7 @@
 	}
 
 	function onKey(e: KeyboardEvent) {
-		if ((e.target as HTMLElement).closest('input, select, [role="menu"]')) return;
+		if ((e.target as HTMLElement).closest('input, select, [role="menu"], [role="dialog"]')) return;
 		poke();
 		switch (e.key) {
 			case ' ':
@@ -130,7 +134,9 @@
 	onpointerdown={poke}
 >
 	<!-- svelte-ignore a11y_media_has_caption (tracks are added by the player from the server) -->
-	<video bind:this={video} class="size-full object-contain" playsinline onclick={() => player.toggle()} ondblclick={toggleFullscreen}></video>
+	<video bind:this={video} class="size-full object-contain" style={subtitleStyle.vars} playsinline onclick={() => player.toggle()} ondblclick={toggleFullscreen}></video>
+
+	<SubtitleSettings bind:open={subSettingsOpen} />
 
 	{#if player.buffering && !player.error}
 		<div class="pointer-events-none absolute inset-0 grid place-items-center" aria-live="polite">
@@ -199,13 +205,15 @@
 				{#if subTracks.length}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger class={ctl} aria-label="Subtitles"><Captions class="size-6" /></DropdownMenu.Trigger>
-						<DropdownMenu.Content side="top" align="end" sideOffset={8} class="z-[60] max-h-80 min-w-64 overflow-y-auto rounded-2xl border border-white/15 bg-[#1A1A21] p-1.5 text-white shadow-2xl">
+						<DropdownMenu.Content side="top" align="end" sideOffset={8} onCloseAutoFocus={(e) => subSettingsOpen && e.preventDefault()} class="z-[60] max-h-80 min-w-64 overflow-y-auto rounded-2xl border border-white/15 bg-[#1A1A21] p-1.5 text-white shadow-2xl">
 							<DropdownMenu.RadioGroup value={String(player.subtitleIndex)} onValueChange={(v) => player.setTracks({ subtitleIndex: +v })}>
 								<DropdownMenu.RadioItem value="-1" class={menuItem}>Off</DropdownMenu.RadioItem>
 								{#each subTracks as s (s.Index)}
 									<DropdownMenu.RadioItem value={String(s.Index)} class={menuItem}>{s.DisplayTitle}</DropdownMenu.RadioItem>
 								{/each}
 							</DropdownMenu.RadioGroup>
+							<DropdownMenu.Separator class="my-1 h-px bg-white/15" />
+							<DropdownMenu.Item class={menuItem} onSelect={() => (subSettingsOpen = true)}><Settings2 class="size-4" aria-hidden="true" />Subtitle settings…</DropdownMenu.Item>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				{/if}

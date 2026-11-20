@@ -43,11 +43,11 @@ ARG JELLYFIN_VERSION
 #
 FROM node:${NODEJS_VERSION}-alpine AS web
 WORKDIR /src
-RUN corepack enable
-COPY web/package.json web/pnpm-lock.yaml web/.npmrc ./
-RUN pnpm install --frozen-lockfile
+RUN npm install -g bun@1.4.4
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
 COPY web .
-RUN pnpm build && mv build /web
+RUN bun run build && mv build /web
 
 #
 # Build the server artifacts

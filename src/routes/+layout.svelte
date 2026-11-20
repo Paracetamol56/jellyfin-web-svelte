@@ -11,15 +11,22 @@
 	import { page } from '$app/state';
 	import { session } from '#lib/api/session.svelte.ts';
 	import AppShell from '#lib/components/AppShell.svelte';
-	import Logo from '#lib/components/Logo.svelte';
+	import LoadingScreen from '#lib/components/LoadingScreen.svelte';
+	import { boot } from '#lib/boot.svelte.ts';
+	import { fade } from 'svelte/transition';
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
 
 
 	session.restore();
+	boot.start();
 
 	const onLogin = $derived(page.route.id === '/login');
+
+	$effect(() => {
+		if (session.ready) boot.sessionReady(!!session.user);
+	});
 
 	$effect(() => {
 		if (!session.ready) return;
@@ -36,9 +43,7 @@
 
 <QueryClientProvider client={queryClient}>
 	{#if !session.ready}
-		<div class="grid min-h-dvh place-items-center" aria-busy="true" aria-label="Loading">
-			<div class="animate-pulse"><Logo size={56} /></div>
-		</div>
+		<!-- the splash below covers this -->
 	{:else if onLogin || !session.user}
 		{@render children()}
 	{:else}
@@ -47,4 +52,7 @@
 		<ConfirmHost />
 	{/if}
 	<Toaster />
+	{#if !boot.done}
+		<div out:fade={{ duration: 250 }} class="fixed inset-0 z-100"><LoadingScreen progress={boot.progress} /></div>
+	{/if}
 </QueryClientProvider>

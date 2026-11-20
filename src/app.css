@@ -142,3 +142,18 @@
 	.marquee-box { white-space: normal; overflow-wrap: anywhere; }
 	.marquee { animation: none; display: inline; }
 }
+
+/* Subtitles in the video player: the look comes from variables on the <video> (see
+   #lib/player/subtitle-style.svelte.ts). Defaults: upright white letters, black border, no box. */
+video::cue {
+	background: var(--sub-bg, transparent);
+	color: var(--sub-color, #fff);
+	font-size: var(--sub-size, 4.2vmin);
+	font-family: 'Inter Variable', Inter, system-ui, sans-serif;
+	font-style: normal;
+	line-height: 1.25;
+	text-shadow: var(--sub-shadow, -0.05em -0.05em 0 #000, 0 -0.05em 0 #000, 0.05em -0.05em 0 #000, -0.05em 0 0 #000, 0.05em 0 0 #000, -0.05em 0.05em 0 #000, 0 0.05em 0 #000, 0.05em 0.05em 0 #000);
+}
+video::cue(i) {
+	font-style: var(--sub-italic, normal);
+}

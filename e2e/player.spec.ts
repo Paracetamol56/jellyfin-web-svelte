@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import * as F from './fixtures';
 import { mockJellyfin, signIn, type MockLog } from './mock';
 
 let log: MockLog;
@@ -162,4 +163,115 @@ test('a track with several artists links to each of them', async ({ page }) => {
 	const overview = page.getByRole('region', { name: 'Overview' });
 	await expect(overview.getByRole('link', { name: 'Ada Lark' })).toHaveAttribute('href', /item\/ar2$/);
 	await expect(overview.getByRole('link', { name: 'Ben Moss' })).toHaveAttribute('href', /item\/ar3$/);
+});
+
+test('subtitles: pick a track in the player and its cues load', async ({ page }) => {
+	// Start from the beginning: the mock's 30-second sample is shorter than the fixture's resume point.
+	await page.route(/\/Items\/m1(\?|$)/, (route) => route.fulfill({ json: { ...F.all.m1, UserData: { Played: false, PlaybackPositionTicks: 0, IsFavorite: false } } }));
+	await page.goto('/#/item/m1');
+	await page.getByRole('button', { name: 'Play', exact: true }).click();
+	await expect(page).toHaveURL(/#\/play\/m1$/);
+	await expect.poll(async () => (await mediaTime(page))?.paused).toBe(false);
+	await page.mouse.move(600, 400);
+	await page.getByRole('button', { name: 'Subtitles' }).click();
+	await page.getByRole('menuitemradio', { name: /English/ }).click();
+	const state = () =>
+		page.evaluate(() => {
+			const v = document.querySelector('video')!;
+			const t = v.textTracks[0];
+			return t ? { mode: t.mode, cues: t.cues?.length ?? 0 } : null;
+		});
+	await expect.poll(state).toEqual({ mode: 'showing', cues: 4 });
+	// Off hides the cues again.
+	await page.mouse.move(600, 400);
+	await page.getByRole('button', { name: 'Subtitles' }).click();
+	await page.getByRole('menuitemradio', { name: 'Off' }).click();
+	await expect.poll(async () => (await state())?.mode).toBe('disabled');
+});
+
+/** Settings live in the Subtitles menu. */
+async function openSettings(page: import('@playwright/test').Page) {
+	await page.mouse.move(600, 400);
+	await page.getByRole('button', { name: 'Subtitles' }).click();
+	await page.getByRole('menuitem', { name: /Subtitle settings/ }).click();
+}
+
+test('subtitle settings: upright letters with a black border by default, saved on this device', async ({ page }) => {
+	await page.route(/\/Items\/m1(\?|$)/, (route) => route.fulfill({ json: { ...F.all.m1, UserData: { Played: false, PlaybackPositionTicks: 0, IsFavorite: false } } }));
+	await page.goto('/#/item/m1');
+	await page.getByRole('button', { name: 'Play', exact: true }).click();
+	await expect.poll(async () => (await mediaTime(page))?.paused).toBe(false);
+	await page.mouse.move(600, 400);
+	await page.getByRole('button', { name: 'Subtitles' }).click();
+	await page.getByRole('menuitemradio', { name: /English/ }).click();
+
+	const vars = () => page.evaluate(() => {
+		const st = (document.querySelector('video') as HTMLVideoElement).style;
+		return { bg: st.getPropertyValue('--sub-bg'), italic: st.getPropertyValue('--sub-italic'), shadow: st.getPropertyValue('--sub-shadow').startsWith('-0.05em') };
+	});
+	// Defaults: no box, no italics, a black border on the letters.
+	expect(await vars()).toEqual({ bg: 'transparent', italic: 'normal', shadow: true });
+
+	await openSettings(page);
+	const panel = page.getByRole('dialog', { name: 'Subtitle settings' });
+	await expect(panel.getByRole('button', { name: 'Medium' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(panel.getByRole('button', { name: 'Normal' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(panel.getByLabel('Black box behind text')).not.toBeChecked();
+	await expect(panel.getByLabel('Italics from the subtitle file')).not.toBeChecked();
+	await expect(panel.getByRole('button', { name: 'Reset to defaults' })).toBeDisabled();
+
+	if (process.env.SUB_SHOT) {
+		await page.keyboard.press('Escape');
+		await page.evaluate(() => { const v = document.querySelector('video')!; v.currentTime = 10.3; v.pause(); });
+		await page.mouse.move(2, 2);
+		await page.waitForTimeout(3800); // controls fade out
+		await page.evaluate(() => ((document.querySelector('[role=application]') as HTMLElement).style.background = '#9aa3ad')); // light ground to show the border
+		await page.screenshot({ path: `${process.env.SUB_SHOT}-default.png`, clip: { x: 340, y: 520, width: 600, height: 110 } });
+		await page.evaluate(() => ((document.querySelector('[role=application]') as HTMLElement).style.background = ''));
+		await openSettings(page);
+	}
+	await panel.getByRole('button', { name: 'Large' }).click();
+	await panel.getByLabel('Black box behind text').check();
+	await panel.getByRole('button', { name: 'Yellow' }).click();
+	expect((await vars()).bg).toBe('rgba(0,0,0,0.78)');
+	if (process.env.SUB_SHOT) {
+		await page.keyboard.press('Escape');
+		await page.mouse.move(2, 2);
+		await page.waitForTimeout(3800);
+		await page.screenshot({ path: `${process.env.SUB_SHOT}-changed.png` });
+		await openSettings(page);
+	}
+
+	// Saved: still applied after a reload.
+	await page.reload();
+	await openSettings(page);
+	const again = page.getByRole('dialog', { name: 'Subtitle settings' });
+	await expect(again.getByLabel('Black box behind text')).toBeChecked();
+	await expect(again.getByRole('button', { name: 'Large' })).toHaveAttribute('aria-pressed', 'true');
+	await again.getByRole('button', { name: 'Reset to defaults' }).click();
+	await expect(again.getByLabel('Black box behind text')).not.toBeChecked();
+	expect((await vars()).bg).toBe('transparent');
+});
+
+test('subtitles: switching language replaces the old subtitles, never shows both', async ({ page }) => {
+	await page.route(/\/Items\/m1(\?|$)/, (route) => route.fulfill({ json: { ...F.all.m1, UserData: { Played: false, PlaybackPositionTicks: 0, IsFavorite: false } } }));
+	await page.goto('/#/item/m1');
+	await page.getByRole('button', { name: 'Play', exact: true }).click();
+	await expect.poll(async () => (await mediaTime(page))?.paused).toBe(false);
+	const cues = () =>
+		page.evaluate(() => {
+			const all = [...document.querySelector('video')!.textTracks].flatMap((t) => [...(t.cues ?? [])].map((c) => (c as VTTCue).text));
+			return { total: all.length, japanese: all.filter((t) => t.includes('(jpn)')).length };
+		});
+	const pick = async (name: RegExp) => {
+		await page.mouse.move(600, 400);
+		await page.getByRole('button', { name: 'Subtitles' }).click();
+		await page.getByRole('menuitemradio', { name }).click();
+	};
+	await pick(/English/);
+	await expect.poll(cues).toEqual({ total: 4, japanese: 0 });
+	await pick(/Japanese/);
+	await expect.poll(cues).toEqual({ total: 4, japanese: 3 }); // the English cues are gone (one test cue carries no language tag)
+	await pick(/English/);
+	await expect.poll(cues).toEqual({ total: 4, japanese: 0 });
 });
